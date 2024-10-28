@@ -1,0 +1,43 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build Docker images
+        run: docker-compose build
+
+      - name: Run tests
+        run: |
+          docker-compose up -d
+          docker-compose exec -T php php -v
+          docker-compose down
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Lint Docker files
+        run: |
+          docker run --rm -i hadolint/hadolint < docker/php/Dockerfile.prod
+          docker run --rm -i hadolint/hadolint < Dockerfile
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
