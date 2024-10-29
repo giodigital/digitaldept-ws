@@ -28,22 +28,19 @@ command -v docker-compose >/dev/null 2>&1 || {
     apt install -y docker-compose
 }
 
-# Crea configurazione iniziale Nginx con SSL
-cat > docker/nginx/conf.d/${DOMAIN}.conf << CONF
+# Crea la configurazione nginx da template
+cat > docker/nginx/templates/site.conf.template << 'TEMPLATE'
 server {
     listen 80;
     listen [::]:80;
     server_name ${DOMAIN};
 
-    # Certbot challenge
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
-        try_files \$uri =404;
     }
-
-    # Redirect all HTTP traffic to HTTPS
+    
     location / {
-        return 301 https://\$host\$request_uri;
+        return 301 https://$host$request_uri;
     }
 }
 
@@ -65,52 +62,43 @@ server {
     ssl_session_tickets off;
 
     # Security Headers
-    add_header Strict-Transport-Security "max-age=63072000" always;
-    add_header X-Frame-Options SAMEORIGIN;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-XSS-Protection "1; mode=block";
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
 
     # Root directory and index files
     root /var/www/html;
     index index.php index.html;
 
+    # phpMyAdmin configuration
+    location /phpmyadmin/ {
+        proxy_pass http://phpmyadmin:80/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+    }
+
     # Proxy settings for Apache
     location / {
         proxy_pass http://apache:80;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header X-Forwarded-Host \$host;
-        proxy_set_header X-Forwarded-Port \$server_port;
-
-        # Timeout settings
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-
-        # Buffer settings
-        proxy_buffer_size 4k;
-        proxy_buffers 4 32k;
-        proxy_busy_buffers_size 64k;
-    }
-
-    # PHP handling
-    location ~ \.php$ {
-        proxy_pass http://apache:80;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    # Deny access to hidden files
-    location ~ /\. {
-        deny all;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-CONF
+TEMPLATE
+
+# Elabora il template con le variabili
+envsubst '$DOMAIN' < docker/nginx/templates/site.conf.template > docker/nginx/conf.d/${DOMAIN}.conf
 
 # Inizializza directory
 mkdir -p src
@@ -130,8 +118,11 @@ echo -e "${GREEN}Avvio container...${NC}"
 # Ferma eventuali container in esecuzione
 docker-compose down
 
-# Avvia i container necessari
-docker-compose up -d nginx apache php mariadb redis
+# Aggiorna il file .env con il dominio corrente
+sed -i "s/DOMAIN=.*/DOMAIN=${DOMAIN}/" .env 2>/dev/null || echo "DOMAIN=${DOMAIN}" >> .env
+
+# Avvia i container
+docker-compose up -d
 
 # Attendi che i servizi siano pronti
 echo -e "${YELLOW}Attendo l'inizializzazione dei servizi...${NC}"
@@ -162,7 +153,9 @@ if curl -s -o /dev/null -w "%{http_code}" http://${DOMAIN} > /dev/null; then
         (crontab -l 2>/dev/null; echo "0 0 * * * cd $(pwd) && docker-compose run --rm certbot renew --quiet && docker-compose kill -s SIGHUP nginx") | crontab -
         
         echo -e "${GREEN}Installazione completata con successo!${NC}"
-        echo -e "Sito disponibile su: https://${DOMAIN}"
+        echo -e "Sito disponibile su:"
+        echo -e "- https://${DOMAIN}"
+        echo -e "- https://${DOMAIN}/phpmyadmin/"
     else
         echo -e "${RED}Errore durante l'ottenimento del certificato SSL${NC}"
         exit 1
@@ -181,14 +174,7 @@ echo -e "\n${GREEN}Verifica dello stato dei servizi:${NC}"
 docker-compose ps
 
 echo -e "\n${GREEN}Installazione completata!${NC}"
-echo "Verifica che il sito sia raggiungibile su:"
-echo "- http://${DOMAIN} (reindirizza a HTTPS)"
-echo "- https://${DOMAIN}"
-echo ""
-echo "Comandi utili:"
-echo "docker-compose ps     - Stato dei container"
-echo "docker-compose logs   - Log dei servizi"
-echo "Accesso phpMyAdmin:"
-echo "https://${DOMAIN}/phpmyadmin/"
-echo "Utente: root"
+echo "Credenziali phpMyAdmin:"
+echo "URL: https://${DOMAIN}/phpmyadmin/"
+echo "User: root"
 echo "Password: vedi file .env (DB_ROOT_PASSWORD)"

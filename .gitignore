@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.backup.env
+*.log
+docker/mariadb/backup/*
+docker/nginx/ssl/*
+docker/logs/*
+src/*
+!src/.gitkeep
+.DS_Store

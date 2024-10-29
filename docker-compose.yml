@@ -1,4 +1,69 @@
-[precedente configurazione...]
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www/html:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+    depends_on:
+      - apache
+    networks:
+      - frontend
+      - backend
+
+  apache:
+    build:
+      context: ./docker/apache
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_apache
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www/html:ro
+    depends_on:
+      - php
+    networks:
+      - backend
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile.prod
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_php
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - MYSQL_HOST=mariadb
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+    networks:
+      - backend
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_mariadb
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - backend
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
@@ -9,13 +74,42 @@
       - PMA_USER=root
       - PMA_PASSWORD=${DB_ROOT_PASSWORD}
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - PMA_ARBITRARY=0
       - PMA_ABSOLUTE_URI=https://${DOMAIN}/phpmyadmin/
       - UPLOAD_LIMIT=64M
       - MEMORY_LIMIT=256M
       - MAX_EXECUTION_TIME=600
-      - PMA_MAX_ROWS=100
-    volumes:
-      - ./docker/phpmyadmin/config/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php:ro
     networks:
       - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+  certbot:
+    image: certbot/certbot
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+    depends_on:
+      - nginx
+
+networks:
+  frontend:
+    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_frontend
+  backend:
+    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_backend
+
+volumes:
+  mariadb_data:
+  redis_data:
+  certbot-etc:
+  certbot-var:
+  webroot:
