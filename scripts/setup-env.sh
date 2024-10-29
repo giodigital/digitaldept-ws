@@ -23,6 +23,7 @@ cat > .env << EOL
 # Environment
 COMPOSE_PROJECT_NAME=digitaldept
 APP_ENV=production
+DOMAIN=
 
 # Database
 MYSQL_DATABASE=digitaldept
@@ -62,3 +63,7 @@ chmod 600 .env
 echo -e "${GREEN}Setup completato!${NC}"
 echo "Credenziali salvate in ~/.digitaldept-ws/credentials.txt"
 echo "File .env creato con successo"
+echo ""
+echo "Prossimi passi:"
+echo "1. Modifica il file .env se necessario"
+echo "2. Esegui: ./scripts/install.sh your-domain.com your@email.com"

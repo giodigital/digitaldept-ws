@@ -1,11 +1,36 @@
+# Environment files
 .env
 .env.*
 !.env.example
-.backup.env
+
+# Logs
 *.log
-docker/mariadb/backup/*
-docker/nginx/ssl/*
 docker/logs/*
+!docker/logs/.gitkeep
+
+# Backup files
+docker/mariadb/backup/*
+!docker/mariadb/backup/.gitkeep
+
+# SSL certificates
+docker/nginx/ssl/*
+!docker/nginx/ssl/.gitkeep
+
+# Source files
 src/*
 !src/.gitkeep
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

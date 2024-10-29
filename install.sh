@@ -280,3 +280,4 @@ else
 fi
 
 log "Setup completato con successo!"
+
