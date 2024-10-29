@@ -1,0 +1,95 @@
+FROM php:8.3-fpm-alpine
+
+# System dependencies
+RUN apk add --no-cache \
+    linux-headers \
+    $PHPIZE_DEPS \
+    libzip-dev \
+    oniguruma-dev \
+    postgresql-dev \
+    icu-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libwebp-dev \
+    imagemagick \
+    imagemagick-dev \
+    imagemagick-libs \
+    libxml2-dev \
+    enchant2-dev \
+    libgcrypt-dev \
+    gmp-dev \
+    curl-dev \
+    libmcrypt-dev \
+    openldap-dev \
+    imap-dev \
+    bzip2-dev \
+    libxslt-dev \
+    db-dev \
+    gettext-dev \
+    aspell-dev \
+    hiredis-dev \
+    libmemcached-dev \
+    libssh2-dev
+
+# Configurazione GD
+RUN docker-php-ext-configure gd \
+    --with-freetype \
+    --with-jpeg \
+    --with-webp
+
+# PHP Core Extensions
+RUN docker-php-ext-install \
+    bcmath \
+    bz2 \
+    calendar \
+    dba \
+    dom \
+    enchant \
+    exif \
+    fileinfo \
+    ftp \
+    gd \
+    gettext \
+    gmp \
+    imap \
+    intl \
+    ldap \
+    mysqli \
+    pdo_mysql \
+    phar \
+    posix \
+    shmop \
+    soap \
+    sockets \
+    sysvmsg \
+    sysvsem \
+    sysvshm \
+    xsl \
+    opcache \
+    zip
+
+# Install PECL extensions one by one
+RUN pecl install apcu && \
+    docker-php-ext-enable apcu
+
+RUN pecl install redis && \
+    docker-php-ext-enable redis
+
+RUN set -eux; \
+    mkdir -p /usr/src/php/ext/imagick; \
+    curl -fsSL https://github.com/Imagick/imagick/archive/refs/tags/3.7.0.tar.gz | tar xvz -C "/usr/src/php/ext/imagick" --strip-components=1; \
+    docker-php-ext-install imagick
+
+RUN pecl install igbinary && \
+    docker-php-ext-enable igbinary
+
+RUN pecl install msgpack && \
+    docker-php-ext-enable msgpack
+
+RUN pecl install memcached && \
+    docker-php-ext-enable memcached
+
+WORKDIR /var/www/html
+
+USER www-data
