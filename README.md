@@ -194,3 +194,20 @@ MIT License - vedi [LICENSE](LICENSE)
 - MariaDB: 10.11
 - Redis: 7-alpine
 - phpMyAdmin: latest
+
+## 💾 Backup Remoto
+
+### Configurazione
+1. Crea file `.backup.env` con i dettagli del server remoto
+2. Configura le credenziali SSH
+3. Imposta il percorso di backup remoto
+
+### Backup Automatico
+```bash
+# Backup manuale
+./scripts/backup/backup.sh
+
+# Configurare backup automatico
+crontab -e
+# Aggiungi: 0 3 * * * cd /path/to/project && ./scripts/backup/backup.sh
+
