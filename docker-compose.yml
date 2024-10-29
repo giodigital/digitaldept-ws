@@ -11,7 +11,6 @@ services:
     volumes:
       - ./src:/var/www/html:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./docker/nginx/templates:/etc/nginx/templates:ro
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
       - webroot:/var/www/certbot
@@ -29,7 +28,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./src:/var/www/html:ro
-      - ./docker/apache/conf.d:/etc/apache2/conf.d:ro
     depends_on:
       - php
     networks:
@@ -64,8 +62,19 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ./docker/mariadb/conf.d:/etc/mysql/conf.d:ro
-      - ./docker/mariadb/backup:/backup
+    networks:
+      - backend
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-digitaldept}_phpmyadmin
+    restart: unless-stopped
+    environment:
+      - PMA_HOST=mariadb
+      - PMA_USER=root
+      - PMA_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - PMA_ARBITRARY=1
     networks:
       - backend
 
@@ -97,12 +106,7 @@ networks:
 
 volumes:
   mariadb_data:
-    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_mariadb_data
   redis_data:
-    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_redis_data
   certbot-etc:
-    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_certbot_etc
   certbot-var:
-    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_certbot_var
   webroot:
-    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_webroot

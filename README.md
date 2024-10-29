@@ -168,3 +168,29 @@ Documentazione dettagliata disponibile in:
 ## 📝 License
 
 MIT License - vedi [LICENSE](LICENSE)
+
+## 🔧 Gestione Database
+
+### phpMyAdmin
+- Accesso: https://tuo-dominio.com/phpmyadmin/
+- Credenziali: configurate nel file .env
+- Funzionalità:
+  - Gestione database
+  - Import/Export dati
+  - Gestione utenti
+  - Query SQL
+
+### Sicurezza phpMyAdmin
+- Accesso protetto da autenticazione
+- Connessione SSL/TLS
+- Rate limiting configurato
+- Accesso limitato alla rete backend
+
+## 📦 Versioni dei componenti
+
+- Nginx: stable-alpine
+- Apache: 2.4
+- PHP: 8.3-fpm
+- MariaDB: 10.11
+- Redis: 7-alpine
+- phpMyAdmin: latest
