@@ -116,6 +116,11 @@ services:
       - MEMORY_LIMIT=256M
       - MAX_EXECUTION_TIME=600
       - PMA_PORT=3306
+      - PMA_ARBITRARY=0
+      - PMA_CONTROLUSER=${PMA_CONTROLUSER:-pma_control}
+      - PMA_CONTROLPASS=${PMA_CONTROLPASS:-pma_password}
+      - PMA_ALLOW_NO_PASSWORD=false
+      - PMA_AUTH_TYPE=cookie
     depends_on:
       - mariadb
     networks:
