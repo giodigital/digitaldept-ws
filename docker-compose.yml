@@ -108,19 +108,21 @@ services:
     restart: unless-stopped
     environment:
       - PMA_HOST=mariadb
-      - PMA_USER=root
-      - PMA_PASSWORD=${DB_ROOT_PASSWORD}
+      - PMA_PORT=3306
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
       - PMA_ABSOLUTE_URI=https://${DOMAIN}/phpmyadmin
       - UPLOAD_LIMIT=64M
       - MEMORY_LIMIT=256M
       - MAX_EXECUTION_TIME=600
-      - PMA_PORT=3306
       - PMA_ARBITRARY=0
+      - PMA_AUTH_TYPE=cookie
+      - ALLOW_EMPTY_PASSWORD=false
+      - PMA_ALLOW_NO_PASSWORD=false
       - PMA_CONTROLUSER=${PMA_CONTROLUSER:-pma_control}
       - PMA_CONTROLPASS=${PMA_CONTROLPASS:-pma_password}
-      - PMA_ALLOW_NO_PASSWORD=false
-      - PMA_AUTH_TYPE=cookie
+      - PMA_LOGIN_COOKIE_VALIDITY=1800
+    volumes:
+      - phpmyadmin_sessions:/sessions
     depends_on:
       - mariadb
     networks:
@@ -178,3 +180,5 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-digitaldept}_certbot_var
   webroot:
     name: ${COMPOSE_PROJECT_NAME:-digitaldept}_webroot
+  phpmyadmin_sessions:
+    name: ${COMPOSE_PROJECT_NAME:-digitaldept}_phpmyadmin_sessions

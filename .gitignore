@@ -8,13 +8,17 @@
 docker/logs/*
 !docker/logs/.gitkeep
 
+# SSL certificates
+docker/nginx/ssl/*
+!docker/nginx/ssl/.gitkeep
+
 # Backup files
 docker/mariadb/backup/*
 !docker/mariadb/backup/.gitkeep
 
-# SSL certificates
-docker/nginx/ssl/*
-!docker/nginx/ssl/.gitkeep
+# nginx conf
+docker/nginx/conf.d/*
+!docker/nginx/conf.d/.gitkeep
 
 # Source files
 src/*
